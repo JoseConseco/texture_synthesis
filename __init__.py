@@ -152,6 +152,7 @@ class OBJECT_OT_TextureSynthesis(bpy.types.Operator):
         return out_path
 
 
+
     def execute(self, context):
         text_synt = context.scene.text_synth
         out_path = self.get_output_path(context)
