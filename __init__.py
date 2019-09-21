@@ -16,9 +16,8 @@ Created by JOSECONSCO (loosely based on 'dynamic enum' blender template and Simp
     You should have received a copy of the GNU General Public License
     along with this program.  If not, see <http://www.gnu.org/licenses/>.
 '''
-from tempfile import gettempdir
-import functools
-import subprocess
+
+
 bl_info = {
     "name": "Texture Synthesis",
     "author": "Jose Conseco",
@@ -30,10 +29,21 @@ bl_info = {
     "wiki_url": "",
     "category": "Textures",
 }
+
+if "bpy" in locals():
+    import importlib
+    importlib.reload(get_image_size)
+else:
+    from . import get_image_size
+
 import bpy
 import os
 from pathlib import Path
 from mathutils import Vector
+import bpy.utils.previews
+from tempfile import gettempdir
+import functools
+import subprocess
 
 FILE_EDIT_TIME = None
 MESSAGE = None
@@ -57,6 +67,45 @@ def check_file_exist(filePath):
     return outputPathStr, os.path.isfile(outputPathStr)
 
 
+def enum_previews_from_directory_items(self, context):
+    """EnumProperty callback"""
+    enum_items = []
+
+    if context is None:
+        return enum_items
+
+    ts_params = context.scene.ts_params
+    directory = ts_params.input_images_dir
+
+    # Get the preview collection (defined in register func).
+    pcoll = preview_collections["main"]
+
+    if directory == pcoll.input_images_dir:
+        return pcoll.my_previews
+
+    print("Scanning directory: %s" % directory)
+
+    if directory and os.path.exists(directory):
+        # Scan the directory for png files
+        image_paths = []
+        for fn in os.listdir(directory):
+            if fn.lower().endswith((".png", ".bmp", ".jpg")):
+                image_paths.append(fn)
+
+        for i, name in enumerate(image_paths):
+            # generates a thumbnail preview for a file.
+            filepath = os.path.join(directory, name)
+            icon = pcoll.get(name)
+            if not icon:
+                thumb = pcoll.load(name, filepath, 'IMAGE')
+            else:
+                thumb = pcoll[name]
+            enum_items.append((name, name, "", thumb.icon_id, i))
+
+    pcoll.my_previews = enum_items
+    pcoll.input_images_dir = directory
+    return pcoll.my_previews
+
 class TS_PT_TextureSynthesis(bpy.types.Panel):
     bl_idname = "TS_Panel"
     bl_label = "Texture Synthesis"
@@ -66,10 +115,50 @@ class TS_PT_TextureSynthesis(bpy.types.Panel):
     bl_context = 'objectmode'
 
     def draw(self, context):
-        layout = self.layout.box()
-        col = layout.column(align=True)
         ts_params = context.scene.ts_params
-        col.prop(ts_params, 'input_image_path')
+        layout = self.layout.box()
+        layout.prop(ts_params, 'gen_type')
+
+        col = layout.column(align=True)
+        if ts_params.gen_type == 'guided-synthesis':
+            split = col.split(factor=0.14, align=True)
+            split.label(text='From')
+            split.template_ID(ts_params, "from_guide", new="image.new")
+
+            split = col.split(factor=0.14, align=True)
+            split.label(text='To')
+            split.template_ID(ts_params, "to_guide", new="image.new")
+            row = col.row(align=True)
+            # row.prop(ts_params, 'from_guide')
+            # row.prop(ts_params, 'to_guide')
+        if ts_params.gen_type == 'transfer-style':
+            row = col.row(align=True)
+            row.prop(ts_params, 'alpha')
+
+            row = col.row(align=True)
+            row.label(text='Style == input image')
+            row.prop(ts_params, 'to_guide', text='Guide')
+        if ts_params.gen_type == 'inpaint':
+            row = col.row(align=True)
+            row.prop(ts_params, 'to_guide', text='Mask')
+
+        col = layout.column(align=True)
+        col.prop(ts_params, "input_images_dir")
+        col.template_icon_view(ts_params, "my_previews", show_labels=True)
+
+        row = col.row(align=True)
+        row.prop(ts_params, "my_previews", text='')
+        if ts_params.input_images_dir and ts_params.my_previews:
+            img_open = row.operator("image.open", icon='IMPORT', text='').filepath = os.path.join(ts_params.input_images_dir, ts_params.my_previews)
+            
+        box = layout.box()
+        box.label(text = 'Settings')
+        box_col = box.column(align=True)
+        box_col.prop(ts_params, 'tiling')
+        box_col.prop(ts_params, 'seed')
+        box_col.prop(ts_params, 'rand_init')
+        
+        col = box.column(align=True)
         row = col.row(align=True)
         if ts_params.in_size_from_preset:
             row.prop(ts_params, 'in_size_preset')
@@ -77,29 +166,14 @@ class TS_PT_TextureSynthesis(bpy.types.Panel):
             row.prop(ts_params, 'in_size_x')
             row.prop(ts_params, 'in_size_y')
         row.prop(ts_params, 'in_size_from_preset', icon='PRESET', text='')
-        
-        col = layout.column(align=True)
-        col.prop(ts_params, 'tiling')
-        col.prop(ts_params, 'seed')
-        col.prop(ts_params, 'rand_init')
 
-
-        col = layout.column(align=True)
-        col.prop(ts_params, 'gen_type')
-        if ts_params.gen_type == 'guided-synthesis':
-            row = col.row(align=True)
-            row.prop(ts_params, 'from_guide')
-            row.prop(ts_params, 'to_guide')
-        if ts_params.gen_type == 'transfer-style':
-            row = col.row(align=True)
-            row.prop(ts_params, 'alpha')
-
-            row = col.row(align=True)
-            row.label(text ='Style == input image')
-            row.prop(ts_params, 'to_guide', text='Guide')
-        if ts_params.gen_type == 'inpaint':
-            row = col.row(align=True)
-            row.prop(ts_params, 'to_guide', text='Mask')
+        row = col.row(align=True)
+        if ts_params.out_size_from_preset:
+            row.prop(ts_params, 'out_size_preset')
+        else:
+            row.prop(ts_params, 'out_size_x')
+            row.prop(ts_params, 'out_size_y')
+        row.prop(ts_params, 'out_size_from_preset', icon='PRESET', text='')
 
         col = layout.column(align=True)
         col.prop(ts_params, 'out_method')
@@ -108,14 +182,6 @@ class TS_PT_TextureSynthesis(bpy.types.Panel):
             col.prop(ts_params, 'out_image_path')
             if MESSAGE:
                 col.label(text=MESSAGE)
-
-        row = col.row(align=True)
-        if ts_params.in_size_from_preset:
-            row.prop(ts_params, 'out_size_preset')
-        else:
-            row.prop(ts_params, 'out_size_x')
-            row.prop(ts_params, 'out_size_y')
-        row.prop(ts_params, 'out_size_from_preset', icon='PRESET', text='')
 
         layout.operator("object.run_tsynthesis", icon='NODE_TEXTURE')
 
@@ -169,11 +235,11 @@ def check_file_was_generated(out_path):
     print(f'Waiting for file {out_path} to be ready to load')
     if FILE_EDIT_TIME is None: #dir and or did not exist. Use isFile to check img was generated
         if os.path.isfile(out_path):
-            bpy.data.images.load(out_path, check_existing=False)
+            bpy.data.images.load(out_path, check_existing=True)
             return
     else:
         if os.path.getmtime(out_path) > FILE_EDIT_TIME:
-            bpy.data.images.load(out_path, check_existing=False)
+            bpy.data.images.load(out_path, check_existing=True)
             return
     return 1 #else wait another 0.5 sec
 
@@ -201,24 +267,24 @@ class OBJECT_OT_TextureSynthesis(bpy.types.Operator):
 
     '''
     bl_idname = "object.run_tsynthesis"
-    bl_label = "Run Texture Shynth"
+    bl_label = "Run Texture Shynthesis"
     bl_description = "Generate Texture Shynth image gneration"
     bl_options = {'REGISTER'}
 
     @staticmethod
     def get_output_path(context):
         ts_params = context.scene.ts_params
-        in_name = os.path.split(ts_params.input_image_path)[1][:-4]
+        # in_name = os.path.split(ts_params.input_images_dir)[1][:-4]
         if ts_params.out_method == 'TARGET_DIR':
             # os.path.dirname()
-            out_path = os.path.join(os.path.realpath(ts_params.out_image_path), in_name+'.png')
+            out_path = os.path.join(os.path.realpath(ts_params.out_image_path), ts_params.my_previews)
         elif ts_params.out_method == 'OVERRIDE':
-            out_path = ts_params.input_image_path
+            out_path = os.path.join(ts_params.input_images_dir, ts_params.my_previews)
         elif ts_params.out_method == 'LOAD':
             tmp = os.path.join(gettempdir(), 'ts_params')
             if not os.path.isdir:
                 os.makedirs(tmp)
-            out_path = os.path.join(tmp, 'img_generated_tmp'+'.png')
+            out_path = os.path.join(tmp, ts_params.my_previews)
         return out_path
 
     def execute(self, context):
@@ -227,6 +293,7 @@ class OBJECT_OT_TextureSynthesis(bpy.types.Operator):
 
         in_size = ts_params.in_size_preset if ts_params.in_size_from_preset else f"{ts_params.in_size_x}x{ts_params.in_size_y}"
         out_size = ts_params.out_size_preset if ts_params.out_size_from_preset else f"{ts_params.out_size_x}x{ts_params.out_size_y}"
+        input_img_path = os.path.join(ts_params.input_images_dir, ts_params.my_previews)
         command = [get_addon_preferences().text_synth_path,
                    "--out", out_path,
                    "--out-size", out_size,
@@ -237,10 +304,10 @@ class OBJECT_OT_TextureSynthesis(bpy.types.Operator):
             command.append('--tiling')
         # if ts_params.gen_type != 'generate':
         if ts_params.gen_type == 'generate':
-            command.extend(['generate', ts_params.input_image_path]) 
+            command.extend(['generate', input_img_path]) 
             
         elif ts_params.gen_type == 'multi-generate':  #TODO:
-            command.extend(['generate', ts_params.input_image_path]) 
+            command.extend(['generate', input_img_path]) 
 
         elif ts_params.gen_type == 'guided-synthesis': 
             if not ts_params.from_guide or not ts_params.from_guide.has_data:
@@ -256,7 +323,7 @@ class OBJECT_OT_TextureSynthesis(bpy.types.Operator):
             command.extend(['generate',
                             '--target-guide', ts_params.from_guide.filepath_raw,
                             '--guides', ts_params.to_guide.filepath_raw,
-                            '--',ts_params.input_image_path]) #? or '--'+ts_params.input_img ?
+                            '--',input_img_path]) #? or '--'+ts_params.input_img ?
 
         elif ts_params.gen_type == 'transfer-style':  # TODO:
             if not ts_params.to_guide or not ts_params.to_guide.has_data:
@@ -266,7 +333,7 @@ class OBJECT_OT_TextureSynthesis(bpy.types.Operator):
             ts_params.to_guide.save()
             command[1:1] =['--alpha', str(ts_params.alpha)] #add at begning after program name
             command.extend(['transfer-style',
-                            '--style', ts_params.input_image_path,
+                            '--style', input_img_path,
                             '--guide', bpy.path.abspath(ts_params.to_guide.filepath_raw)])
 
         elif ts_params.gen_type == 'inpaint': 
@@ -276,7 +343,7 @@ class OBJECT_OT_TextureSynthesis(bpy.types.Operator):
             ts_params.to_guide.filepath_raw = out_path[:-4] + '_inpaint.png'
             ts_params.to_guide.save()
             command.extend(['--inpaint', bpy.path.abspath(ts_params.to_guide.filepath_raw), 
-                            'generate', ts_params.input_image_path])
+                            'generate', input_img_path])
 
         print(command)
         subprocess.Popen(command)
@@ -289,7 +356,17 @@ class OBJECT_OT_TextureSynthesis(bpy.types.Operator):
         return {'FINISHED'}
 
 
+
 class TextSynth_Settings(bpy.types.PropertyGroup):
+    def get_img_size(self, context):
+        input_img_path = os.path.join(self.input_images_dir, self.my_previews)
+        try:
+            width, height = get_image_size.get_image_size(input_img_path)
+        except get_image_size.UnknownImageFormat:
+            width, height = 400, 400
+        print(f'Updating output size {width}x{height}')
+        self['in_size_x'], self['in_size_y'] = width, height
+        self['out_size_x'], self['out_size_y'] = width, height
 
     def set_abs_path(self, context):
         abs_p = bpy.path.abspath(self['out_image_path'])
@@ -309,23 +386,26 @@ class TextSynth_Settings(bpy.types.PropertyGroup):
         else:
             self['out_image_path'] = str(gettempdir())
             
-    input_image_path: bpy.props.StringProperty(name="Input image", description="", default="", subtype='FILE_PATH')
+    input_images_dir: bpy.props.StringProperty(name="Images", description="Input images directory for texture synthesis", default="", subtype='DIR_PATH')
+    my_previews: bpy.props.EnumProperty(items=enum_previews_from_directory_items, name='Input Image', update=get_img_size)
+
     out_image_path: bpy.props.StringProperty(name="Output Dir", description="", default=gettempdir(), subtype='DIR_PATH', update=set_abs_path)
-    gen_type: bpy.props.EnumProperty(name='generate type',
+    gen_type: bpy.props.EnumProperty(name='Synthesise',
                     items=[('generate', 'Simple Generate', 'Generate similar-looking images from a single example'),
                            ('multi-generate', 'Multi Generate', 'We can also provide multiple example images and the algorithm will "remix" them into a new image.'),
                            ('guided-synthesis', 'Guided Synthesis', 'We can also guide the generation by providing a transformation "FROM"-"TO" in a form of guide maps'),
                            ('transfer-style', 'Style Transfer', 'Texture synthesis API supports auto-generation of example guide maps, which produces a style transfer-like effect.'),
                            ('inpaint', 'Inpaint', 'We can also fill-in missing information with inpaint. By changing the seed, we will get different version of the "fillment".'),
                            ], default='generate')
-    tiling: bpy.props.BoolProperty(name='Tiling', default=True)
-    seed: bpy.props.IntProperty(name='seed', default=1)
-    rand_init: bpy.props.IntProperty(name='rand init', default=1)
+    tiling: bpy.props.BoolProperty(name='Tiling', description='Enables tiling of the output image', default=True)
+    seed: bpy.props.IntProperty(name='seed', description='A seed value for the random generator to give pseudo-deterministic result. Smaller details will be different from generation to generation due to the non-deterministic nature of multi-threading', default=1)
+    rand_init: bpy.props.IntProperty(name='rand init', description='The number of randomly initialized pixels before the main resolve loop starts', default=1)
 
-    to_guide: bpy.props.PointerProperty(name='To Guide', type=bpy.types.Image)
+    to_guide: bpy.props.PointerProperty(name='To', type=bpy.types.Image)
     from_guide: bpy.props.PointerProperty(name='From', type=bpy.types.Image)
 
-    alpha: bpy.props.FloatProperty(name='Guide Importance', default=0.8, min=0.0, soft_max = 1.0)
+    alpha: bpy.props.FloatProperty(
+        name='Guide Importance', description='Alpha parameter controls the \'importance\' of the user guide maps. If you want to preserve more details from the example map, make sure the number < 1.0. Range (0.0 - 1.0)', default=0.8, min=0.0, soft_max=1.0)
 
     in_size_from_preset: bpy.props.BoolProperty(name='Input Size from preset', description='Input Size from preset', default=True)
     in_size_x: bpy.props.IntProperty(name='input size x', default=400)
@@ -355,6 +435,11 @@ class TextSynth_Settings(bpy.types.PropertyGroup):
                                               ('LOAD', 'To image data', 'Load result directly to blender image data')
                                               ], default='TARGET_DIR')
 
+
+# We can store multiple preview collections here,
+# however in this example we only store "main"
+preview_collections = {}
+
 def register():
     bpy.utils.register_class(TextureSynthPreferences)
     bpy.utils.register_class(TS_PT_TextureSynthesis)
@@ -362,13 +447,35 @@ def register():
     bpy.utils.register_class(OBJECT_OT_TextureSynthesis)
     bpy.types.Scene.ts_params = bpy.props.PointerProperty(type=TextSynth_Settings)
 
+    # Note that preview collections returned by bpy.utils.previews
+    # are regular Python objects - you can use them to store custom data.
+    #
+    # This is especially useful here, since:
+    # - It avoids us regenerating the whole enum over and over.
+    # - It can store enum_items' strings
+    #   (remember you have to keep those strings somewhere in py,
+    #   else they get freed and Blender references invalid memory!).
+    
+    pcoll = bpy.utils.previews.new()
+    pcoll.input_images_dir = ""
+    pcoll.my_previews = ()
+
+    preview_collections["main"] = pcoll
+
+
 
 def unregister():
     bpy.utils.unregister_class(TextureSynthPreferences)
     bpy.utils.unregister_class(TS_PT_TextureSynthesis)
     bpy.utils.unregister_class(TextSynth_Settings)
     bpy.utils.unregister_class(OBJECT_OT_TextureSynthesis)
+    del bpy.context.scene.ts_params.my_previews
     del bpy.types.Scene.ts_params
+
+    for pcoll in preview_collections.values():
+        bpy.utils.previews.remove(pcoll)
+    preview_collections.clear()
+
 
 
 if __name__ == "__main__":
