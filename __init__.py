@@ -16,7 +16,9 @@ Created by JOSECONSCO (loosely based on 'dynamic enum' blender template and Simp
     You should have received a copy of the GNU General Public License
     along with this program.  If not, see <http://www.gnu.org/licenses/>.
 '''
-
+#TODO:  why check_file_was_generated sometimes fails to load result?
+#TODO:  multi input generate..
+#TODO:  wait for inpaitn fix: https://github.com/EmbarkStudios/texture-synthesis/issues/41
 
 bl_info = {
     "name": "Texture Synthesis",
@@ -123,11 +125,11 @@ class TS_PT_TextureSynthesis(bpy.types.Panel):
         if ts_params.gen_type == 'guided-synthesis':
             split = col.split(factor=0.14, align=True)
             split.label(text='From')
-            split.template_ID(ts_params, "from_guide", new="image.new")
+            split.template_ID(ts_params, "from_guide", new="image.new", open="image.open")
 
             split = col.split(factor=0.14, align=True)
             split.label(text='To')
-            split.template_ID(ts_params, "to_guide", new="image.new")
+            split.template_ID(ts_params, "to_guide", new="image.new", open="image.open")
             row = col.row(align=True)
             # row.prop(ts_params, 'from_guide')
             # row.prop(ts_params, 'to_guide')
@@ -135,12 +137,14 @@ class TS_PT_TextureSynthesis(bpy.types.Panel):
             row = col.row(align=True)
             row.prop(ts_params, 'alpha')
 
+            split = col.split(factor=0.14, align=True)
+            split.label(text='Guide')
+            split.template_ID(ts_params, "to_guide", new="image.new", open="image.open")
             row = col.row(align=True)
-            row.label(text='Style == input image')
-            row.prop(ts_params, 'to_guide', text='Guide')
         if ts_params.gen_type == 'inpaint':
-            row = col.row(align=True)
-            row.prop(ts_params, 'to_guide', text='Mask')
+            split = col.split(factor=0.14, align=True)
+            split.label(text='Mask')
+            split.template_ID(ts_params, "to_guide", new="image.new", open="image.open")
 
         col = layout.column(align=True)
         col.prop(ts_params, "input_images_dir")
@@ -231,15 +235,18 @@ def check_file_was_generated(out_path):
     global FILE_EDIT_TIME, CHECK_COUNT
     CHECK_COUNT += 1
     if CHECK_COUNT > 20: #we waited 20 seconds. Skip listening for changes
+        CHECK_COUNT = 0
         return
-    print(f'Waiting for file {out_path} to be ready to load')
+    print(f'Waiting for file {out_path} to be ready to load. CHECK_COUNT = {CHECK_COUNT}')
     if FILE_EDIT_TIME is None: #dir and or did not exist. Use isFile to check img was generated
         if os.path.isfile(out_path):
             bpy.data.images.load(out_path, check_existing=True)
+            CHECK_COUNT = 0
             return
     else:
         if os.path.getmtime(out_path) > FILE_EDIT_TIME:
             bpy.data.images.load(out_path, check_existing=True)
+            CHECK_COUNT = 0
             return
     return 1 #else wait another 0.5 sec
 
@@ -275,16 +282,17 @@ class OBJECT_OT_TextureSynthesis(bpy.types.Operator):
     def get_output_path(context):
         ts_params = context.scene.ts_params
         # in_name = os.path.split(ts_params.input_images_dir)[1][:-4]
+        out_name = ts_params.my_previews[:-3]+'png' #texture_synthesis.exe only works with png
         if ts_params.out_method == 'TARGET_DIR':
             # os.path.dirname()
-            out_path = os.path.join(os.path.realpath(ts_params.out_image_path), ts_params.my_previews)
+            out_path = os.path.join(os.path.realpath(ts_params.out_image_path), out_name)
         elif ts_params.out_method == 'OVERRIDE':
-            out_path = os.path.join(ts_params.input_images_dir, ts_params.my_previews)
+            out_path = os.path.join(ts_params.input_images_dir, out_name)
         elif ts_params.out_method == 'LOAD':
             tmp = os.path.join(gettempdir(), 'ts_params')
             if not os.path.isdir:
                 os.makedirs(tmp)
-            out_path = os.path.join(tmp, ts_params.my_previews)
+            out_path = os.path.join(tmp, out_name)
         return out_path
 
     def execute(self, context):
@@ -321,8 +329,8 @@ class OBJECT_OT_TextureSynthesis(bpy.types.Operator):
             ts_params.to_guide.filepath_raw = out_path[:-4] + '_to.png'
             ts_params.to_guide.save()
             command.extend(['generate',
-                            '--target-guide', ts_params.from_guide.filepath_raw,
-                            '--guides', ts_params.to_guide.filepath_raw,
+                            '--target-guide', ts_params.to_guide.filepath_raw,
+                            '--guides', ts_params.from_guide.filepath_raw,
                             '--',input_img_path]) #? or '--'+ts_params.input_img ?
 
         elif ts_params.gen_type == 'transfer-style':  # TODO:
@@ -358,8 +366,8 @@ class OBJECT_OT_TextureSynthesis(bpy.types.Operator):
 
 
 class TextSynth_Settings(bpy.types.PropertyGroup):
-    def get_img_size(self, context):
-        input_img_path = os.path.join(self.input_images_dir, self.my_previews)
+    def update_input_img_size(self, context):
+        input_img_path = os.path.join(self.input_images_dir, self.my_previews) if self.gen_type != 'transfer-style' else bpy.path.abspath(self.to_guide.filepath_raw)
         try:
             width, height = get_image_size.get_image_size(input_img_path)
         except get_image_size.UnknownImageFormat:
@@ -387,7 +395,7 @@ class TextSynth_Settings(bpy.types.PropertyGroup):
             self['out_image_path'] = str(gettempdir())
             
     input_images_dir: bpy.props.StringProperty(name="Images", description="Input images directory for texture synthesis", default="", subtype='DIR_PATH')
-    my_previews: bpy.props.EnumProperty(items=enum_previews_from_directory_items, name='Input Image', update=get_img_size)
+    my_previews: bpy.props.EnumProperty(items=enum_previews_from_directory_items, name='Input Image', update=update_input_img_size)
 
     out_image_path: bpy.props.StringProperty(name="Output Dir", description="", default=gettempdir(), subtype='DIR_PATH', update=set_abs_path)
     gen_type: bpy.props.EnumProperty(name='Synthesise',
@@ -401,7 +409,7 @@ class TextSynth_Settings(bpy.types.PropertyGroup):
     seed: bpy.props.IntProperty(name='seed', description='A seed value for the random generator to give pseudo-deterministic result. Smaller details will be different from generation to generation due to the non-deterministic nature of multi-threading', default=1)
     rand_init: bpy.props.IntProperty(name='rand init', description='The number of randomly initialized pixels before the main resolve loop starts', default=1)
 
-    to_guide: bpy.props.PointerProperty(name='To', type=bpy.types.Image)
+    to_guide: bpy.props.PointerProperty(name='To', type=bpy.types.Image, update=update_input_img_size)
     from_guide: bpy.props.PointerProperty(name='From', type=bpy.types.Image)
 
     alpha: bpy.props.FloatProperty(
