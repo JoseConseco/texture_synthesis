@@ -24,4 +24,3 @@ $RECYCLE.BIN/
 *.pyc
 .history/
 .vscode/
-__pycache__/__init__.cpython-37.pyc
