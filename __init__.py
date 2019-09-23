@@ -19,8 +19,7 @@ Created by JOSECONSCO (loosely based on 'dynamic enum' blender template and Simp
 '''
 #You need to download https://github.com/EmbarkStudios/texture-synthesis to use this addon.
 
-#TODO:  why check_file_was_generated sometimes fails to load result?
-#TODO:  multi input generate..
+#DONE:  why check_file_was_generated sometimes fails to load result?
 #TODO:  wait for inpaitn fix: https://github.com/EmbarkStudios/texture-synthesis/issues/41
 
 bl_info = {
@@ -61,7 +60,12 @@ import bpy
 classes = (
     addon_preferences.TextureSynthPreferences,
     tsynth_ui.TSYNTH_PT_TextureSynthesis,
-    tsynth_ui.TSYNTH_PT_Previews,
+    tsynth_ui.VIEW_3D_UL_sel_imgs,
+    # tsynth_ui.TSYNTH_PT_Previews,
+    tsynth_ui.TSYNTH_OT_AddImg,
+    tsynth_ui.TSYNTH_OT_RemoveImg,
+    tsynth_ui.TSYNTH_OT_ClearImg,
+    tsynth_props.SelectedImages,
     tsynth_props.TextSynth_Settings,
     main_operators.OBJECT_OT_TextureSynthesis,
 )

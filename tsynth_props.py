@@ -26,6 +26,10 @@ from . import tsynth_ui
 
 preview_collections = {}
 
+
+class SelectedImages(bpy.types.PropertyGroup):
+    image_name: bpy.props.StringProperty()
+
 class TextSynth_Settings(bpy.types.PropertyGroup):
     def update_input_img_size(self, context):
         input_img_path = os.path.join(self.input_images_dir, self.my_previews) if self.gen_type != 'transfer-style' else bpy.path.abspath(self.to_guide.filepath_raw)
@@ -54,6 +58,13 @@ class TextSynth_Settings(bpy.types.PropertyGroup):
         else:
             self['out_image_path'] = str(gettempdir())
 
+    def limited_previews_from_directory_items(self, context):
+        ''' Dam blender limit enum to 32 max items, with ENUM_FLAG '''
+        items = self.enum_previews_from_directory_items(context)
+        # for i,item in enumerate(items):
+        #     item[4] = i**2  # has to be power of 2 for ENUM_FLAG
+        return items[:32]
+
     def enum_previews_from_directory_items(self, context):
         """EnumProperty callback"""
         enum_items = []
@@ -69,6 +80,7 @@ class TextSynth_Settings(bpy.types.PropertyGroup):
         if directory == pcoll.input_images_dir:
             return pcoll.my_previews
 
+        # bpy.ops.object.clear_img_synth()
         pcoll.clear()
         print("Scanning directory: %s" % directory)
 
@@ -88,7 +100,7 @@ class TextSynth_Settings(bpy.types.PropertyGroup):
                 else:
                     thumb = pcoll[name]
                 short_name = name[:10]+'..' + name[-5:] if len(name) > 20 else name
-                enum_items.append((name, short_name, "", thumb.icon_id, 2**i))  # has to be power of 2 for ENUM_FLAG
+                enum_items.append((name, short_name, "", thumb.icon_id, i)) 
 
         pcoll.my_previews = enum_items
         pcoll.input_images_dir = directory
@@ -97,11 +109,19 @@ class TextSynth_Settings(bpy.types.PropertyGroup):
     def suffix_fix(self, context):
         file_name, ext = os.path.splitext(self.output_file_name)
         self['output_file_name'] = file_name+'.png'
+    
+    def in_dir_up(self,context):
+        bpy.ops.object.clear_img_synth()
 
-    input_images_dir: bpy.props.StringProperty(name="Images", description="Input images directory for texture synthesis", default="", subtype='DIR_PATH')
+    def active_img_up(self,context):
+        self.my_previews = self.selected_imgs[self.active_img].image_name
+
+    input_images_dir: bpy.props.StringProperty(name="Images", description="Input images directory for texture synthesis", default="", subtype='DIR_PATH', update=in_dir_up)
     my_previews: bpy.props.EnumProperty(items=enum_previews_from_directory_items, name='Input Image', update=update_input_img_size)
 
-    my_previews_multi: bpy.props.EnumProperty(items=enum_previews_from_directory_items, name='Input Image', options={'ENUM_FLAG'})
+    # my_previews_multi: bpy.props.EnumProperty(items=limited_previews_from_directory_items, name='Input Image', description='Max 32 icons. This is how blender rolls', options={'ENUM_FLAG'})
+    selected_imgs: bpy.props.CollectionProperty(type=SelectedImages)
+    active_img: bpy.props.IntProperty(name='active_img', description='', default=1, update=active_img_up)
 
     out_image_path: bpy.props.StringProperty(name="Dir", description="", default=gettempdir(), subtype='DIR_PATH', update=set_abs_path)
     gen_type: bpy.props.EnumProperty(name='Synthesise',
@@ -169,7 +189,7 @@ class TextSynth_Settings(bpy.types.PropertyGroup):
     out_method: bpy.props.EnumProperty(name='Method', description='How / where to save generated image',
                                        items=[('TARGET_DIR', 'To Directory', 'Write to target dir'),
                                               ('OVERRIDE', 'Override input image', 'Override input image'),
-                                              ('LOAD', 'To image data', 'Load result directly to blender image data')
+                                              ('LOAD', 'To image data', 'Generate image to temp folder and load result to blender')
                                               ], default='TARGET_DIR')
 
 

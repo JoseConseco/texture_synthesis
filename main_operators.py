@@ -29,27 +29,33 @@ import functools
 import subprocess
 from . import tsynth_props
 
-FILE_EDIT_TIME = None
-START_TIME = 0
+LAST_EDIT_TIME = None
+COUNT_TIME = 0
 
 def check_file_was_generated(out_path):
-    global FILE_EDIT_TIME, START_TIME
+    global LAST_EDIT_TIME, COUNT_TIME
     current_time = time.time()
-    if current_time - START_TIME > 20:  # we waited 20 max seconds. Else quit timer
-        START_TIME = current_time
+    if current_time - COUNT_TIME > 20:  # we waited 20 max seconds. Else quit timer
+        COUNT_TIME = 0
         return
-    print(f'Waiting for file {out_path} to be ready to load. START_TIME = {START_TIME}')
-    if FILE_EDIT_TIME is None:  # dir and or did not exist. Use isFile to check img was generated
+    print(f'Waiting 20 sec for file {out_path} to be ready to load. {current_time - COUNT_TIME:.2} sec')
+    if LAST_EDIT_TIME is None:  # dir and or did not exist. Use isFile to check img was generated
         if os.path.isfile(out_path):
             time.sleep(.300)  # just give time for file to be written?
-            bpy.data.images.load(out_path, check_existing=True)
-            START_TIME = current_time
+            existing_imgs = bpy.data.images[:]
+            x= bpy.data.images.load(out_path, check_existing=True)
+            if x in existing_imgs:
+                x.reload()
+            LAST_EDIT_TIME = 0
             return
     else:
-        if os.path.getmtime(out_path) > FILE_EDIT_TIME:
+        if os.path.getmtime(out_path) > LAST_EDIT_TIME:
             time.sleep(.300)
-            bpy.data.images.load(out_path, check_existing=True)
-            START_TIME = current_time
+            existing_imgs = bpy.data.images[:]
+            x = bpy.data.images.load(out_path, check_existing=True)
+            if x in existing_imgs:
+                x.reload()
+            LAST_EDIT_TIME = 0
             return
     return 1  # else wait another 0.5 sec
 
@@ -143,7 +149,7 @@ class OBJECT_OT_TextureSynthesis(bpy.types.Operator):
             command.extend(['generate', input_img_path])
 
         elif tsynth_params.gen_type == 'multi-generate':
-            sel_images = [os.path.join(tsynth_params.input_images_dir, preview_name) for preview_name in tsynth_params.my_previews_multi]
+            sel_images = [os.path.join(tsynth_params.input_images_dir, img_info.image_name) for img_info in tsynth_params.selected_imgs]
             command.extend(['generate']+sel_images)
 
         elif tsynth_params.gen_type == 'guided-synthesis':
@@ -185,10 +191,11 @@ class OBJECT_OT_TextureSynthesis(bpy.types.Operator):
         print(command)
         subprocess.Popen(command)
 
-        global FILE_EDIT_TIME  # we will wait till file is generated
+        global LAST_EDIT_TIME, COUNT_TIME  # we will wait till file is generated
         if os.path.isfile(out_path):
-            FILE_EDIT_TIME = os.path.getmtime(out_path)
+            LAST_EDIT_TIME = os.path.getmtime(out_path)
         else:
-            FILE_EDIT_TIME = None
+            LAST_EDIT_TIME = None
+        COUNT_TIME = time.time()
         bpy.app.timers.register(functools.partial(check_file_was_generated, out_path), first_interval=1)
         return {'FINISHED'}
