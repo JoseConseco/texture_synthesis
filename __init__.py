@@ -67,7 +67,8 @@ classes = (
     tsynth_ui.TSYNTH_OT_ClearImg,
     tsynth_props.SelectedImages,
     tsynth_props.TextSynth_Settings,
-    main_operators.OBJECT_OT_TextureSynthesis,
+    main_operators.TSYNTH_OT_TextureSynthesis,
+    main_operators.TSYNTH_OT_RefreshDir,
 )
 
 def register():

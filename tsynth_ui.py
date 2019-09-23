@@ -126,13 +126,17 @@ class TSYNTH_PT_TextureSynthesis(bpy.types.Panel):
             split.label(text='Guide')
             split.template_ID(tsynth_params, "to_guide", new="image.new", open="image.open")
             row = col.row(align=True)
+
+            box.label(text='Style:')
         if tsynth_params.gen_type == 'inpaint':
             split = col.split(factor=0.14, align=True)
             split.label(text='Mask')
             split.template_ID(tsynth_params, "to_guide", new="image.new", open="image.open")
 
         col = box.column(align=True)
-        col.prop(tsynth_params, "input_images_dir")
+        row = col.row(align=True)
+        row.prop(tsynth_params, "input_images_dir")
+        row.operator("object.refresh_directory", text='', icon='FILE_REFRESH')
 
         col.template_icon_view(tsynth_params, "my_previews", show_labels=True, scale=4.0, scale_popup=5.0)
         row = col.row(align=True)
@@ -156,12 +160,15 @@ class TSYNTH_PT_TextureSynthesis(bpy.types.Panel):
             # # col.template_icon_view(tsynth_params, "my_previews_multi", show_labels=True)
             # col.prop_with_popover(tsynth_params, 'my_previews', text='', panel='TSYNTH_PT_Previews')  # 'my_previews' cos it wont work with 'my_previews_multi'
 
+        #* SETTINGS
         box = layout.box()
         box.label(text='Settings')
         box_col = box.column(align=True)
         box_col.prop(tsynth_params, 'tiling', icon='OUTLINER_OB_LIGHTPROBE')
         box_col.prop(tsynth_params, 'seed')
         box_col.prop(tsynth_params, 'rand_init')
+        box_col.prop(tsynth_params, 'backtrack_pct')
+        box_col.prop(tsynth_params, 'backtrack_stages')
         box_col.prop(tsynth_params, 'k_neighs')
         box_col.prop(tsynth_params, 'cauchy')
 
@@ -188,6 +195,7 @@ class TSYNTH_PT_TextureSynthesis(bpy.types.Panel):
             row.prop(tsynth_params, 'out_size_percent')
         row.prop(tsynth_params, 'out_size_from_preset', icon='PRESET', text='')
 
+        #* OUTPUT
         box = layout.box()
         box.label(text='Output')
         col = box.column(align=True)

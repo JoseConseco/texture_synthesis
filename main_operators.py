@@ -37,8 +37,8 @@ def check_file_was_generated(out_path):
     current_time = time.time()
     if current_time - COUNT_TIME > 20:  # we waited 20 max seconds. Else quit timer
         COUNT_TIME = 0
+        print(f'Waited 20 sec for {out_path} to be generated, no output detected. Time passed: {current_time - COUNT_TIME:.1} sec\nSkipping loading generated file')
         return
-    print(f'Waiting 20 sec for file {out_path} to be ready to load. {current_time - COUNT_TIME:.2} sec')
     if LAST_EDIT_TIME is None:  # dir and or did not exist. Use isFile to check img was generated
         if os.path.isfile(out_path):
             time.sleep(.300)  # just give time for file to be written?
@@ -60,7 +60,7 @@ def check_file_was_generated(out_path):
     return 1  # else wait another 0.5 sec
 
 
-class OBJECT_OT_TextureSynthesis(bpy.types.Operator):
+class TSYNTH_OT_TextureSynthesis(bpy.types.Operator):
     '''
     1. Single example generation:
         ts.exe --out out/01.jpg generate imgs/1.jpg
@@ -130,6 +130,8 @@ class OBJECT_OT_TextureSynthesis(bpy.types.Operator):
                    "--rand-init", str(tsynth_params.rand_init),
                    "--k-neighs", str(tsynth_params.k_neighs),
                    "--cauchy", str(tsynth_params.cauchy),
+                   "--backtrack-pct", str(tsynth_params.backtrack_pct/100),
+                   "--backtrack-stages", str(tsynth_params.backtrack_stages),
                    "--in-size", in_size]
         if tsynth_params.tiling:
             command.append('--tiling')
@@ -199,3 +201,14 @@ class OBJECT_OT_TextureSynthesis(bpy.types.Operator):
         COUNT_TIME = time.time()
         bpy.app.timers.register(functools.partial(check_file_was_generated, out_path), first_interval=1)
         return {'FINISHED'}
+
+
+class TSYNTH_OT_RefreshDir(bpy.types.Operator):
+    bl_idname = "object.refresh_directory"
+    bl_label = "Refresh Icons"
+    bl_description = "Refresh icons from directory"
+    bl_options = {"REGISTER","UNDO"}
+
+    def execute(self, context):
+        tsynth_props.FORCE_REFRESH_ICO = True
+        return {"FINISHED"}

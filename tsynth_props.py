@@ -25,7 +25,7 @@ from tempfile import gettempdir
 from . import tsynth_ui
 
 preview_collections = {}
-
+FORCE_REFRESH_ICO = False
 
 class SelectedImages(bpy.types.PropertyGroup):
     image_name: bpy.props.StringProperty()
@@ -67,6 +67,7 @@ class TextSynth_Settings(bpy.types.PropertyGroup):
 
     def enum_previews_from_directory_items(self, context):
         """EnumProperty callback"""
+        global FORCE_REFRESH_ICO
         enum_items = []
         if context is None:
             return enum_items
@@ -78,7 +79,11 @@ class TextSynth_Settings(bpy.types.PropertyGroup):
         pcoll = preview_collections["main"]
 
         if directory == pcoll.input_images_dir:
-            return pcoll.my_previews
+            if not FORCE_REFRESH_ICO:
+                return pcoll.my_previews
+            else:
+                FORCE_REFRESH_ICO = False
+
 
         # bpy.ops.object.clear_img_synth()
         pcoll.clear()
@@ -116,7 +121,7 @@ class TextSynth_Settings(bpy.types.PropertyGroup):
     def active_img_up(self,context):
         self.my_previews = self.selected_imgs[self.active_img].image_name
 
-    input_images_dir: bpy.props.StringProperty(name="Images", description="Input images directory for texture synthesis", default="", subtype='DIR_PATH', update=in_dir_up)
+    input_images_dir: bpy.props.StringProperty(name="Dir:", description="Input images directory for texture synthesis", default="", subtype='DIR_PATH', update=in_dir_up)
     my_previews: bpy.props.EnumProperty(items=enum_previews_from_directory_items, name='Input Image', update=update_input_img_size)
 
     # my_previews_multi: bpy.props.EnumProperty(items=limited_previews_from_directory_items, name='Input Image', description='Max 32 icons. This is how blender rolls', options={'ENUM_FLAG'})
@@ -139,7 +144,9 @@ class TextSynth_Settings(bpy.types.PropertyGroup):
         name='k-neighs', description='The number of neighboring pixels each pixel is aware of during the generation, larger numbers means more global structures are captured. Default=50', default=50, soft_max=100)
     cauchy: bpy.props.FloatProperty(name='Cauchy', description='The distribution dispersion used for picking '
                                     'best candidate (controls the distribution "tail flatness").Values close to 0.0 will produce "harsh" borders between generated "chunks".'
-                                    ' Values closer to 1.0 will produce a smoother gradient on those borders', default=1.0)
+                                    ' Values closer to 1.0 will produce a smoother gradient on those borders', min=0, max=1, default=1.0)
+    backtrack_stages: bpy.props.IntProperty(name='Backtrack stages', description='The number of backtracking stages. Backtracking prevents "garbage" generation', default=5, min=0, max=10)
+    backtrack_pct: bpy.props.FloatProperty(name='Backtrack %', description='The percentage of pixels to be backtracked during each p_stage.', default=50, min=0, max=100)
     output_file_name: bpy.props.StringProperty(name='Name', default='Generated.png', update=suffix_fix)
 
     to_guide: bpy.props.PointerProperty(name='To', type=bpy.types.Image, update=update_input_img_size)
@@ -149,7 +156,7 @@ class TextSynth_Settings(bpy.types.PropertyGroup):
         name='Guide Importance', description='Alpha parameter controls the \'importance\' of the user guide maps. If you want to preserve more details from the example map, make sure the number < 1.0. Range (0.0 - 1.0)', default=0.8, min=0.0, soft_max=1.0)
 
     in_size_from_preset: bpy.props.BoolProperty(name='Input Size from preset', description='Input Size from preset', default=False)
-    in_size_percent: bpy.props.IntProperty(name='%', description='Input size multiplier', default=100, min=0, max=200, subtype='PERCENTAGE')
+    in_size_percent: bpy.props.IntProperty(name='%', description='Input size multiplier', default=100, min=0, soft_max=100, subtype='PERCENTAGE')
     in_size_x: bpy.props.IntProperty(name='Input x', default=400)
     in_size_y: bpy.props.IntProperty(name='Input y', default=400)
     in_size_preset_x: bpy.props.EnumProperty(name='Input', description='Input size from Preset',  # can be  x * x , or x * y
@@ -168,7 +175,7 @@ class TextSynth_Settings(bpy.types.PropertyGroup):
                                                     ], default='512')
 
     out_size_from_preset: bpy.props.BoolProperty(name='Output', description='Output Size from preset', default=False)
-    out_size_percent: bpy.props.IntProperty(name='%', description='Output size multiplier', default=100, min=0, max=200, subtype='PERCENTAGE')
+    out_size_percent: bpy.props.IntProperty(name='%', description='Output size multiplier', default=100, min=0, soft_max=100, subtype='PERCENTAGE')
     out_size_x: bpy.props.IntProperty(name='Output x', default=400)
     out_size_y: bpy.props.IntProperty(name='Output y', default=400)
     out_size_preset_x: bpy.props.EnumProperty(name='Output Size', description='From Preset',  # can be  x * x , or x * y
