@@ -21,7 +21,7 @@ import bpy
 import os
 from pathlib import Path
 from .tsynth_ui import TSYNTH_PT_TextureSynthesis
-from .utils import get_addon_preferences
+from .utils import get_addon_preferences, addon_name_lowercase
 
 
 def check_file_exist(filePath):
@@ -54,7 +54,7 @@ def update_panel(self, context):
 
 
 class TextureSynthPreferences(bpy.types.AddonPreferences):
-    bl_idname = 'texture_synthesis'
+    bl_idname = addon_name_lowercase()
 
     def check_ts_exist(self, context):
         absPath, ts_exists = check_file_exist(self.text_synth_path)
