@@ -1,4 +1,7 @@
-GUI for : [texture-synthesis](https://github.com/EmbarkStudios/texture-synthesis)
+This blender is GUI for : [texture-synthesis](https://github.com/EmbarkStudios/texture-synthesis)
+
+Github adds '-master' suffix to downloaded zip file - addon folder name. Remove this suffix so that addon works correctly. Folder name should then be: 
+* texture_synthesis
 
 ![ts_ui.gif](./img/ts_ui.gif)
 
