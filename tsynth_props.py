@@ -138,7 +138,7 @@ class TextSynth_Settings(bpy.types.PropertyGroup):
                                             ], default='generate')
     tiling: bpy.props.BoolProperty(name='Tiling', description='Enables tiling of the output image', default=True)
     seed: bpy.props.IntProperty(name='seed', description='A seed value for the random generator to give pseudo-deterministic result.'
-                                ' Smaller details will be different from generation to generation due to the non-deterministic nature of multi-threading', default=1)
+                                ' Smaller details will be different from generation to generation due to the non-deterministic nature of multi-threading', default=1, min=1)
     rand_init: bpy.props.IntProperty(name='rand init', description='The number of randomly initialized pixels before the main resolve loop starts', default=1, min=1)
     k_neighs: bpy.props.IntProperty(
         name='k-neighs', description='The number of neighboring pixels each pixel is aware of during the generation, larger numbers means more global structures are captured. Default=50', default=50, soft_max=100)
