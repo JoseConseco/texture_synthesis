@@ -141,7 +141,7 @@ class TextSynth_Settings(bpy.types.PropertyGroup):
                                 ' Smaller details will be different from generation to generation due to the non-deterministic nature of multi-threading', default=1, min=1)
     rand_init: bpy.props.IntProperty(name='rand init', description='The number of randomly initialized pixels before the main resolve loop starts', default=1, min=1)
     k_neighs: bpy.props.IntProperty(
-        name='k-neighs', description='The number of neighboring pixels each pixel is aware of during the generation, larger numbers means more global structures are captured. Default=50', default=50, soft_max=100)
+        name='k-neighs', description='The number of neighboring pixels each pixel is aware of during the generation, larger numbers means more global structures are captured. Default=50', default=50, min=1, soft_max=100)
     cauchy: bpy.props.FloatProperty(name='Cauchy', description='The distribution dispersion used for picking '
                                     'best candidate (controls the distribution "tail flatness").Values close to 0.0 will produce "harsh" borders between generated "chunks".'
                                     ' Values closer to 1.0 will produce a smoother gradient on those borders', min=0, max=1, default=1.0)
