@@ -93,10 +93,10 @@ class TSYNTH_OT_ClearImg(bpy.types.Operator):
 class TSYNTH_PT_TextureSynthesis(bpy.types.Panel):
     bl_idname = "TSYNTH_PT_TextureSynthesis"
     bl_label = "Texture Synthesis"
-    bl_space_type = 'VIEW_3D'
+    bl_space_type = 'IMAGE_EDITOR'
     bl_region_type = 'UI'
-    bl_category = 'Tools'
-    bl_context = 'objectmode'
+    bl_category = 'Texture Synthesis'
+    # bl_context = 'objectmode'
 
     def draw(self, context):
         tsynth_params = context.scene.tsynth_params

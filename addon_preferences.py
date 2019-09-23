@@ -65,7 +65,7 @@ class TextureSynthPreferences(bpy.types.AddonPreferences):
             self.display_info = "texture-synthesis.exe not found in: " + absPath
 
     text_synth_path: bpy.props.StringProperty(name="Path to texture-synthesis.exe", description="", default="", subtype='FILE_PATH', update=check_ts_exist)
-    category: bpy.props.StringProperty(name="Tab Category", description="Choose a name for the category of the panel", default="Tools", update=update_panel)
+    category: bpy.props.StringProperty(name="Tab Category", description="Choose a name for the category of the panel", default="Texture Synthesis", update=update_panel)
     display_info: bpy.props.StringProperty(name="Info", description="", default="")
 
     def draw(self, context):

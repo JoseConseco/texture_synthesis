@@ -35,9 +35,9 @@ COUNT_TIME = 0
 def check_file_was_generated(out_path):
     global LAST_EDIT_TIME, COUNT_TIME
     current_time = time.time()
-    if current_time - COUNT_TIME > 20:  # we waited 20 max seconds. Else quit timer
+    if current_time - COUNT_TIME > 30:  # we waited 20 max seconds. Else quit timer
         COUNT_TIME = 0
-        print(f'Waited 20 sec for {out_path} to be generated, no output detected. Time passed: {current_time - COUNT_TIME:.1} sec\nSkipping loading generated file')
+        print(f'Waited 30 sec for {out_path} to be generated, no output detected. Time passed: {current_time - COUNT_TIME:.1} sec\nSkipping loading generated file')
         return
     if LAST_EDIT_TIME is None:  # dir and or did not exist. Use isFile to check img was generated
         if os.path.isfile(out_path):
@@ -171,7 +171,7 @@ class TSYNTH_OT_TextureSynthesis(bpy.types.Operator):
                             '--', input_img_path])  # ? or '--'+tsynth_params.input_img ?
 
         elif tsynth_params.gen_type == 'transfer-style':  # TODO:
-            if not tsynth_params.to_guide or not tsynth_params.to_guide.has_data:
+            if tsynth_params.to_guide is None:
                 self.report({'ERROR'}, 'To guide image is empty!. Cancelling')
                 return {'CANCELLED'}
             # tsynth_params.to_guide.filepath_raw = out_path[:-4] + 'to_guide.png' #it should be loaded img....
