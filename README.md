@@ -1,2 +1,3 @@
-GUI for : https://github.com/EmbarkStudios/texture-synthesis
-After istallin addon seelect place where texture-synthesis.exe is installed from addon preferences.
+GUI for : [texture-synthesis](https://link](https://github.com/EmbarkStudios/texture-synthesis)
+After installing addon go to addon preferences and select directory where texture-synthesis.exe is installed.
+Addon panel is located in Right 3D Viewport Sidebar -> Tools panel.
