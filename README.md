@@ -1,4 +1,4 @@
-This blender is GUI for : [texture-synthesis](https://github.com/EmbarkStudios/texture-synthesis)
+This blender addon is GUI for : [texture-synthesis](https://github.com/EmbarkStudios/texture-synthesis)
 
 ![ts_ui.gif](./img/ts_ui.gif)
 
