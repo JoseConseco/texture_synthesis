@@ -146,7 +146,7 @@ class TextSynth_Settings(bpy.types.PropertyGroup):
                                     'best candidate (controls the distribution "tail flatness").Values close to 0.0 will produce "harsh" borders between generated "chunks".'
                                     ' Values closer to 1.0 will produce a smoother gradient on those borders', min=0, max=1, default=1.0)
     backtrack_stages: bpy.props.IntProperty(name='Backtrack stages', description='The number of backtracking stages. Backtracking prevents "garbage" generation', default=5, min=0, max=10)
-    backtrack_pct: bpy.props.FloatProperty(name='Backtrack %', description='The percentage of pixels to be backtracked during each p_stage.', default=50, min=0, max=100)
+    backtrack_pct: bpy.props.IntProperty(name='Backtrack %', description='The percentage of pixels to be backtracked during each p_stage.', default=50, min=0, max=100)
     output_file_name: bpy.props.StringProperty(name='Name', default='Generated.png', update=suffix_fix)
 
     to_guide: bpy.props.PointerProperty(name='To', type=bpy.types.Image, update=update_input_img_size)
