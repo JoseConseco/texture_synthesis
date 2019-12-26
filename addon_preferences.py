@@ -18,7 +18,7 @@ Created by JOSECONSCO (loosely based on 'dynamic enum' blender template and Simp
 '''
 
 import bpy
-import os
+import os, platform
 from pathlib import Path
 from .tsynth_ui import TSYNTH_PT_TextureSynthesis
 from .utils import get_addon_preferences, addon_name_lowercase
@@ -57,9 +57,11 @@ class TextureSynthPreferences(bpy.types.AddonPreferences):
     bl_idname = addon_name_lowercase()
 
     def check_ts_exist(self, context):
+        tx_executable = "texture-synthesis.exe" if platform.system() == "Windows" else "texture-synthesis"
+
         absPath, ts_exists = check_file_exist(self.text_synth_path)
         self['text_synth_path'] = absPath
-        if ts_exists and os.path.basename(absPath) == "texture-synthesis.exe":
+        if ts_exists and os.path.basename(absPath) == tx_executable:
             self.display_info = "texture-synthesis.exe found in: " + absPath
         else:
             self.display_info = "texture-synthesis.exe not found in: " + absPath

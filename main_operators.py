@@ -85,7 +85,7 @@ class TSYNTH_OT_TextureSynthesis(bpy.types.Operator):
     '''
     bl_idname = "object.run_tsynthesis"
     bl_label = "Run Texture Synthesis"
-    bl_description = "Synthesise Texture image"
+    bl_description = "Synthesise Texture image.\n[Shift+Click will] generate output image for all source image files in folder."
     bl_options = {'REGISTER'}
 
     shift_clicked = False

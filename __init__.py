@@ -25,7 +25,7 @@ Created by JOSECONSCO (loosely based on 'dynamic enum' blender template and Simp
 bl_info = {
     "name": "Texture Synthesis",
     "author": "Jose Conseco",
-    "version": (1, 0),
+    "version": (1, 1),
     "blender": (2, 80, 0),
     "location": "View3D > Side Panel (N) > Tools",
     "description": "Textyre Synthesis",
