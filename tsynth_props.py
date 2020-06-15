@@ -137,36 +137,36 @@ class TextSynth_Settings(bpy.types.PropertyGroup):
                                             ('inpaint', 'Inpaint', 'We can also fill-in missing information with inpaint. By changing the seed, we will get different version of the "fillment".'),
                                             ], default='generate')
     tiling: bpy.props.BoolProperty(name='Tiling', description='Enables tiling of the output image', default=True)
-    seed: bpy.props.IntProperty(name='seed', description='A seed value for the random generator to give pseudo-deterministic result.'
+    seed: bpy.props.IntProperty(name='Seed', description='A seed value for the random generator to give pseudo-deterministic result.'
                                 ' Smaller details will be different from generation to generation due to the non-deterministic nature of multi-threading', default=1, min=1)
-    rand_init: bpy.props.IntProperty(name='rand init', description='The number of randomly initialized pixels before the main resolve loop starts', default=1, min=1)
+    rand_init: bpy.props.IntProperty(name='Random Initiation', description='The number of randomly initialized pixels before the main resolve loop starts', default=1, min=1)
     k_neighs: bpy.props.IntProperty(
-        name='k-neighs', description='The number of neighboring pixels each pixel is aware of during the generation, larger numbers means more global structures are captured. Default=50', default=50, min=1, soft_max=100)
+        name='Neighbours', description='The number of neighboring pixels each pixel is aware of during the generation, larger numbers means more global structures are captured. Default=50', default=50, min=1, soft_max=100)
     cauchy: bpy.props.FloatProperty(name='Cauchy', description='The distribution dispersion used for picking '
                                     'best candidate (controls the distribution "tail flatness").Values close to 0.0 will produce "harsh" borders between generated "chunks".'
                                     ' Values closer to 1.0 will produce a smoother gradient on those borders', min=0, max=1, default=1.0)
-    backtrack_stages: bpy.props.IntProperty(name='Backtrack stages', description='The number of backtracking stages. Backtracking prevents "garbage" generation', default=5, min=0, max=10)
-    backtrack_pct: bpy.props.IntProperty(name='Backtrack %', description='The percentage of pixels to be backtracked during each p_stage.', default=50, min=0, max=100)
+    backtrack_stages: bpy.props.IntProperty(name='Backtrack Stages', description='The number of backtracking stages. Backtracking prevents "garbage" generation', default=5, min=0, max=10)
+    backtrack_pct: bpy.props.IntProperty(name='Backtrack Percentage', description='The percentage of pixels to be backtracked during each p_stage.', default=50, min=0, max=100)
     output_file_name: bpy.props.StringProperty(name='Name', default='Generated.png', update=suffix_fix)
 
     to_guide: bpy.props.PointerProperty(name='To', type=bpy.types.Image, update=update_input_img_size)
     from_guide: bpy.props.PointerProperty(name='From', type=bpy.types.Image)
 
     alpha: bpy.props.FloatProperty(
-        name='Guide Importance', description='Alpha parameter controls the \'importance\' of the user guide maps. If you want to preserve more details from the example map, make sure the number < 1.0. Range (0.0 - 1.0)', default=0.8, min=0.0, soft_max=1.0)
+        name='Guide Importance', description='Alpha parameter controls the \'importance\' of the user guide maps. If you want to preserve more details from the example map, make sure the number smaller than 1.0 (Range: 0.0 - 1.0).', default=0.8, min=0.0, soft_max=1.0)
 
-    in_size_from_preset: bpy.props.BoolProperty(name='Input Size from preset', description='Input Size from preset', default=False)
+    in_size_from_preset: bpy.props.BoolProperty(name='Input size from preset', description='Input size from preset', default=False)
     in_size_percent: bpy.props.IntProperty(name='%', description='Input size multiplier', default=100, min=0, soft_max=100, subtype='PERCENTAGE')
     in_size_x: bpy.props.IntProperty(name='Input x', default=400)
     in_size_y: bpy.props.IntProperty(name='Input y', default=400)
-    in_size_preset_x: bpy.props.EnumProperty(name='Input', description='Input size from Preset',  # can be  x * x , or x * y
+    in_size_preset_x: bpy.props.EnumProperty(name='Input', description='Input size from preset',  # can be  x * x , or x * y
                                              items=[('64',   '64', ''),
                                                     ('128', '128', ''),
                                                     ('256', '256', ''),
                                                     ('512', '512', ''),
                                                     ('1024', '1024', '')
                                                     ], default='512')
-    in_size_preset_y: bpy.props.EnumProperty(name='Input', description='Input size from Preset',  # can be  x * x , or x * y
+    in_size_preset_y: bpy.props.EnumProperty(name='Input', description='Input size from preset',  # can be  x * x , or x * y
                                              items=[('64',   '64', ''),
                                                     ('128', '128', ''),
                                                     ('256', '256', ''),
@@ -174,7 +174,7 @@ class TextSynth_Settings(bpy.types.PropertyGroup):
                                                     ('1024', '1024', '')
                                                     ], default='512')
 
-    out_size_from_preset: bpy.props.BoolProperty(name='Output', description='Output Size from preset', default=False)
+    out_size_from_preset: bpy.props.BoolProperty(name='Output', description='Output size from preset', default=False)
     out_size_percent: bpy.props.IntProperty(name='%', description='Output size multiplier', default=100, min=0, soft_max=100, subtype='PERCENTAGE')
     out_size_x: bpy.props.IntProperty(name='Output x', default=400)
     out_size_y: bpy.props.IntProperty(name='Output y', default=400)
