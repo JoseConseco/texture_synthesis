@@ -85,7 +85,7 @@ class TSYNTH_OT_TextureSynthesis(bpy.types.Operator):
     '''
     bl_idname = "object.run_tsynthesis"
     bl_label = "Run Texture Synthesis"
-    bl_description = "Synthesise Texture image.\n[Shift+Click will] generate output image for all source image files in folder."
+    bl_description = "Synthesise texture image.\n[Shift+Click] will generate output image for all source image files in folder."
     bl_options = {'REGISTER'}
 
     shift_clicked = False
@@ -156,10 +156,10 @@ class TSYNTH_OT_TextureSynthesis(bpy.types.Operator):
 
         elif tsynth_params.gen_type == 'guided-synthesis':
             if not tsynth_params.from_guide or not tsynth_params.from_guide.has_data:
-                self.report({'ERROR'}, 'From guid image is empty!. Cancelling')
+                self.report({'ERROR'}, 'From guide image is empty. Canceling')
                 return {'CANCELLED'}
             if not tsynth_params.to_guide or not tsynth_params.to_guide.has_data:
-                self.report({'ERROR'}, 'To guide image is empty!. Cancelling')
+                self.report({'ERROR'}, 'To guide image is empty. Canceling')
                 return {'CANCELLED'}
             tsynth_params.from_guide.filepath_raw = out_path[:-4] + '_from.png'
             tsynth_params.from_guide.save()
@@ -172,7 +172,7 @@ class TSYNTH_OT_TextureSynthesis(bpy.types.Operator):
 
         elif tsynth_params.gen_type == 'transfer-style':  # TODO:
             if tsynth_params.to_guide is None:
-                self.report({'ERROR'}, 'To guide image is empty!. Cancelling')
+                self.report({'ERROR'}, 'To guide image is empty!. Canceling')
                 return {'CANCELLED'}
             # tsynth_params.to_guide.filepath_raw = out_path[:-4] + 'to_guide.png' #it should be loaded img....
             tsynth_params.to_guide.save()
@@ -183,7 +183,7 @@ class TSYNTH_OT_TextureSynthesis(bpy.types.Operator):
 
         elif tsynth_params.gen_type == 'inpaint':
             if not tsynth_params.to_guide or not tsynth_params.to_guide.has_data:
-                self.report({'ERROR'}, 'To guide image is empty!. Cancelling')
+                self.report({'ERROR'}, 'To guide image is empty. Canceling')
                 return {'CANCELLED'}
             tsynth_params.to_guide.filepath_raw = out_path[:-4] + '_inpaint.png'
             tsynth_params.to_guide.save()
@@ -206,7 +206,7 @@ class TSYNTH_OT_TextureSynthesis(bpy.types.Operator):
 class TSYNTH_OT_RefreshDir(bpy.types.Operator):
     bl_idname = "object.refresh_directory"
     bl_label = "Refresh Icons"
-    bl_description = "Refresh icons from directory"
+    bl_description = "Refresh Icons From Directory"
     bl_options = {"REGISTER","UNDO"}
 
     def execute(self, context):

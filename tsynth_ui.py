@@ -37,7 +37,7 @@ class VIEW_3D_UL_sel_imgs(bpy.types.UIList):
 class TSYNTH_OT_AddImg(bpy.types.Operator):
     bl_idname = "object.add_img_synth"
     bl_label = "add_img_synth"
-    bl_description = "add img"
+    bl_description = "Add Image"
     bl_options = {"REGISTER","UNDO"}
 
     name: bpy.props.StringProperty(name='name', description='', default='')
@@ -52,7 +52,7 @@ class TSYNTH_OT_AddImg(bpy.types.Operator):
 class TSYNTH_OT_RemoveImg(bpy.types.Operator):
     bl_idname = "object.remove_img_synth"
     bl_label = "remove_img_synth"
-    bl_description = "Remove Img"
+    bl_description = "Remove Image"
     bl_options = {"REGISTER", "UNDO"}
 
     idx: bpy.props.IntProperty(name='idx', description='', default=1, min=0, max=100, subtype='PERCENTAGE')
@@ -68,7 +68,7 @@ class TSYNTH_OT_RemoveImg(bpy.types.Operator):
 class TSYNTH_OT_ClearImg(bpy.types.Operator):
     bl_idname = "object.clear_img_synth"
     bl_label = "clear_img_synth"
-    bl_description = "Clear images"
+    bl_description = "Clear Images"
     bl_options = {"REGISTER", "UNDO"}
 
     def execute(self, context):
